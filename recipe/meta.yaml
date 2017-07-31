@@ -64,6 +64,13 @@ about:
   license: MIT
   license_file: LICENSE
   summary: 'International Components for Unicode.'
+  description: |
+    ICU is a mature, widely used set of C/C++ and Java libraries providing
+    Unicode and Globalization support for software applications. ICU is
+    widely portable and gives applications the same results on all platforms
+    and between C/C++ and Java software.
+  doc_url: http://site.icu-project.org/design
+  dev_url: http://source.icu-project.org/repos/icu/
 
 extra:
   recipe-maintainers:
