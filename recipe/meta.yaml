@@ -15,16 +15,17 @@ source:
     - icu-config.patch  # [win]
 
 build:
-  number: 0
+  number: 2
+  run_exports:
+    # icu changes their file extension with each major rev.  Default pin OK.
+    - {{ pin_subpackage('icu') }}
 
 requirements:
   build:
     - m2-base  # [win]
     - m2-make  # [win]
-    - vc 9  # [win and py27]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - libstdcxx_{{ target_platform }}  # [linux]
 
 test:
   files:

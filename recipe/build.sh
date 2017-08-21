@@ -7,10 +7,11 @@ chmod +x configure install-sh
 EXTRA_OPTS=""
 if [ "$(uname)" == "Darwin" ]; then
   EXTRA_OPTS="--enable-rpath"
-  export CXX="${CXX} -stdlib=libc++"
 fi
 
 ./configure --prefix="$PREFIX" \
+            --build=$BUILD \
+            --host=$HOST \
             --disable-samples \
             --disable-extras \
             --disable-layout \
