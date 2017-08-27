@@ -19,7 +19,7 @@ fi
             --enable-static       \
             "${EXTRA_OPTS}"
 
-make -j${CPU_COUNT} VERBOSE=1
+make -j${CPU_COUNT} ${VERBOSE_CM}
 make check
 make install
 
