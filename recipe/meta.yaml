@@ -22,10 +22,10 @@ build:
 
 requirements:
   build:
-    - m2-base  # [win]
-    - m2-make  # [win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - m2-base  # [win]
+    - m2-make  # [win]
 
 test:
   files:
