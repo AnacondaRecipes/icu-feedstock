@@ -13,11 +13,22 @@ move configure.new configure
 :: rc.exe gets confused with the '/' form of slashes
 set MSYS_RC_MODE=1
 
+:: 32-bit and VS2015 ends in failure:
+:: uconv.o : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
+:: uconv.o : error LNK2001: unresolved external symbol _uconvmsg_dat
+:: ../../bin/uconv.exe : fatal error LNK1120: 1 unresolved externals
+:: .. without this
+if "%ARCH%"=="32" (
+  if "%c_compiler%"=="vs2015" (
+    set DISABLE_EXTRAS=--disable-extras
+  )
+)
+
 :: Can't seem to determine msys2 due to bug in config.guess,
 :: BUT runConfigureICU expects cygwin, so we just pretend we are
 :: The prefix looks strange but it seems we are chrooted into almost the right
 :: place by msys2, but can't write to the directories we need - fix up below
-bash runConfigureICU Cygwin/MSVC --build=x86_64-pc-cygwin --prefix=/icu
+bash runConfigureICU Cygwin/MSVC --build=x86_64-pc-cygwin --prefix=/icu %DISABLE_EXTRAS%
 :: Ignore errorlevel - there are warnings about various things missing
 :: which we don't actually seem to need. Just keep going...
 ::if errorlevel 1 exit 1
