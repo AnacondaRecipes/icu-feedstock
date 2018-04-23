@@ -1,0 +1,11 @@
+VERBOSE_CM:
+- VERBOSE=1
+c_compiler:
+- vs2015
+cxx_compiler:
+- vs2015
+icu:
+- '58'
+zip_keys:
+- - c_compiler
+  - cxx_compiler
