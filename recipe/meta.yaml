@@ -26,6 +26,7 @@ requirements:
     - {{ compiler('cxx') }}
     - m2-base  # [win]
     - m2-make  # [win]
+    - make   # [unix]
 
 test:
   files:
