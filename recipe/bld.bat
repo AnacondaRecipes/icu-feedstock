@@ -28,12 +28,8 @@ if "%ARCH%"=="32" (
 :: BUT runConfigureICU expects cygwin, so we just pretend we are
 :: The prefix looks strange but it seems we are chrooted into almost the right
 :: place by msys2, but can't write to the directories we need - fix up below
-if "%ARCH%"=="32" (
-  FOR /F "delims=" %%i IN ('cygpath.exe -u "%LIBRARY_PREFIX%"') DO set "CYGWIN_LIBRARY_PREFIX=%%i"
-  bash runConfigureICU Cygwin/MSVC --build=x86_64-pc-cygwin --prefix=!CYGWIN_LIBRARY_PREFIX!/icu %DISABLE_EXTRAS%
-) else (
-  bash runConfigureICU Cygwin/MSVC --build=x86_64-pc-cygwin --prefix=/icu %DISABLE_EXTRAS%
-)
+FOR /F "delims=" %%i IN ('cygpath.exe -u "%LIBRARY_PREFIX%"') DO set "CYGWIN_LIBRARY_PREFIX=%%i"
+bash runConfigureICU Cygwin/MSVC --build=x86_64-pc-cygwin --prefix=!CYGWIN_LIBRARY_PREFIX!/icu %DISABLE_EXTRAS%
 
 :: Ignore errorlevel - there are warnings about various things missing
 :: which we don't actually seem to need. Just keep going...
