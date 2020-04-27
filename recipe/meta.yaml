@@ -20,9 +20,17 @@ source:
     - icu-config.patch  # [win]
     # Fixes a high severity integer/buffer overflow vulnerability
     - CVE-2020-10531.patch
+    # Fix high severity out-bound-write/buffer overflow vulnerabilities
+    - CVE-2017-7867_CVE-2017-7868.patch
+    # Fixes critical severity double free/arbitrary code execution vulnerability
+    - CVE-2017-14952.patch
+    # Fixes medium severity stack buffer overflow/heap corruption vulnerability
+    - CVE-2017-15396.patch
+    # Fixes medium severity integer overflow vulnerability
+    - CVE-2017-15422.patch
 
 build:
-  number: 2
+  number: 3
   run_exports:
     # icu changes their file extension with each major rev.  Default pin OK.
     - {{ pin_subpackage('icu') }}
