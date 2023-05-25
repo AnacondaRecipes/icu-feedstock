@@ -26,6 +26,8 @@ build:
     # icu changes their file extension with each major rev.  Default pin OK.
     - {{ pin_subpackage('icu') }}
   skip: True  # [win and vc>14]
+  missing_dso_whitelist:  # [s390x]
+    - $RPATH/ld64.so.1    # [s390x]
 
 requirements:
   build:
