@@ -76,8 +76,9 @@ test:
     - icuinfo --help
     - icu-config --help  # [not win]
     - makeconv gb-18030-2000.ucm
-    - conda inspect linkages -p $PREFIX $PKG_NAME  # [not win]
-    - conda inspect objects -p $PREFIX $PKG_NAME  # [osx]
+    - genrb de.txt  # [not win]
+    - echo "de.res" > list.txt  # [not win]
+    - pkgdata -p mybundle list.txt  # [not win]
 
 about:
   home: https://icu.unicode.org/
