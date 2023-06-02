@@ -36,6 +36,7 @@ fi
             --disable-extras      \
             --disable-layout      \
             --disable-tests       \
+            --enable-static       \
             ${EXTRA_OPTS}
 
 make -j${CPU_COUNT} ${VERBOSE_CM}
