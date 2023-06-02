@@ -1,4 +1,4 @@
-{% set version = "73.1" %}
+{% set version = "68.1" %}
 {% set version_under = version.replace(".", "_") %}
 {% set version_hyphen = version.replace(".", "-") %}
 
@@ -8,18 +8,16 @@ package:
 
 source:
   - url: https://github.com/unicode-org/icu/releases/download/release-{{ version_hyphen }}/icu4c-{{ version_under }}-src.tgz
-    sha256: a457431de164b4aa7eca00ed134d00dfbf88a77c6986a10ae7774fc076bb8c45
+    sha256: a9f2e3d8b4434b8e53878b4308bd1e6ee51c9c7042e2b1a376abefb6fbb29f2d
     patches:
       # Include an extra header when using mingw.
       - icu4c-4_9_1-mingw-w64-mkdir-compatibility.patch  # [win]
       # Omit lib prefix on libraries.
       - icu-config.patch  # [win]
       - mach-port-t.patch  # [osx]
-      # patch for ICU-22356, required by qt
-      - icu-22356.patch
 
   - url: https://github.com/unicode-org/icu/releases/download/release-{{ version_hyphen }}/icu4c-{{ version_under }}-data.zip
-    sha256: 07d7557efb30fc2e9b74652f1525603b3209a4539d2d345d704e3df3bf9b957e
+    sha256: 03ea8b4694155620548c8c0ba20444f1e7db246cc79e3b9c4fc7a960b160d510
     folder: source/data
 
 build:
@@ -28,8 +26,6 @@ build:
     # icu changes their file extension with each major rev.  Default pin OK.
     - {{ pin_subpackage('icu') }}
   skip: True  # [win and vc>14]
-  missing_dso_whitelist:  # [s390x]
-    - $RPATH/ld64.so.1    # [s390x]
 
 requirements:
   build:
@@ -76,14 +72,12 @@ test:
     - icuinfo --help
     - icu-config --help  # [not win]
     - makeconv gb-18030-2000.ucm
-    - genrb de.txt  # [not win]
-    - echo "de.res" > list.txt  # [not win]
-    - pkgdata -p mybundle list.txt  # [not win]
+    - conda inspect linkages -p $PREFIX $PKG_NAME  # [not win]
+    - conda inspect objects -p $PREFIX $PKG_NAME  # [osx]
 
 about:
-  home: https://icu.unicode.org/
+  home: http://site.icu-project.org/
   license: MIT
-  license_family: MIT
   license_file: LICENSE
   summary: 'International Components for Unicode.'
   description: |
@@ -91,8 +85,8 @@ about:
     Unicode and Globalization support for software applications. ICU is
     widely portable and gives applications the same results on all platforms
     and between C/C++ and Java software.
-  doc_url: https://unicode-org.github.io/icu/
-  dev_url: https://github.com/unicode-org/icu
+  doc_url: http://site.icu-project.org/design
+  dev_url: http://source.icu-project.org/repos/icu/
 
 extra:
   recipe-maintainers:
