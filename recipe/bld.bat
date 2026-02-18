@@ -1,48 +1,64 @@
+@echo off
 SETLOCAL EnableDelayedExpansion
-cd source
 
-:: Remove all instances of /W4 from configure.
-:: They get passed to the linker and confuse it.
-:: Given that we aren't interested in warnings anyway
-:: remove it. I could have used a patch but this seemed
-:: more 'upgrade friendly'
-sed "s~ /W4~~g" configure > configure.new
-move configure.new configure
-
-:: This seems to be required - not sure why but
-:: rc.exe gets confused with the '/' form of slashes
-set MSYS_RC_MODE=1
-
-:: 32-bit and VS2015 ends in failure:
-:: uconv.o : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
-:: uconv.o : error LNK2001: unresolved external symbol _uconvmsg_dat
-:: ../../bin/uconv.exe : fatal error LNK1120: 1 unresolved externals
-:: .. without this
-if "%ARCH%"=="32" (
-  if "%c_compiler%"=="vs2015" (
-    set EXTRA_OPTS=--disable-extras
-  )
+if "%target_platform%"=="win-arm64" (
+    set "PLATFORM=ARM64"
+    set "BINDIR=binARM64"
+    set "LIBDIR=libARM64"
+) else if "%ARCH%"=="64" (
+    set "PLATFORM=x64"
+    set "BINDIR=bin64"
+    set "LIBDIR=lib64"
+) else (
+    set "PLATFORM=Win32"
+    set "BINDIR=bin"
+    set "LIBDIR=lib"
 )
 
-:: This directory is needed during the install process but isn't created by the scripts.
-mkdir data\out\tmp
+if not exist "source\data\out\tmp" mkdir "source\data\out\tmp"
 
-set BUILD=x86_64-pc-cygwin
-set HOST=x86_64-pc-cygwin
-cd ..
+msbuild source\allinone\allinone.sln ^
+    /p:Configuration=Release ^
+    /p:Platform=%PLATFORM% ^
+    /p:WindowsTargetPlatformVersion=%WindowsSDKVer% ^
+    /p:SkipUWP=true
 
-copy "%RECIPE_DIR%\build.sh" .
-set MSYSTEM=MINGW%ARCH%
-set MSYS2_PATH_TYPE=inherit
-set CHERE_INVOKING=1
-FOR /F "delims=" %%i in ('cygpath.exe -u "%LIBRARY_PREFIX%"') DO set "PREFIX=%%i"
+:: msbuild may return non-zero due to test data build needing the py launcher.
+:: Verify the essential artifacts exist instead.
+if not exist "%BINDIR%\icuuc73.dll" (
+    echo ERROR: ICU build failed - essential DLLs not found in %BINDIR%.
+    if not exist "%BINDIR%" (
+        echo Listing top-level directories for debugging:
+        dir /ad /b
+    ) else (
+        echo Contents of %BINDIR%:
+        dir /b "%BINDIR%"
+    )
+    exit 1
+)
+if not exist "%BINDIR%\icudt73.dll" (
+    echo ERROR: ICU data build failed - icudt73.dll not found in %BINDIR%.
+    exit 1
+)
 
-set CC=cl.exe
-set CXX=cl.exe
-
-bash -lc "./build.sh"
+:: Install headers
+if not exist "%LIBRARY_INC%\unicode" mkdir "%LIBRARY_INC%\unicode"
+xcopy /Y "source\common\unicode\*.h" "%LIBRARY_INC%\unicode\"
+if errorlevel 1 exit 1
+xcopy /Y "source\i18n\unicode\*.h" "%LIBRARY_INC%\unicode\"
+if errorlevel 1 exit 1
+xcopy /Y "source\io\unicode\*.h" "%LIBRARY_INC%\unicode\"
 if errorlevel 1 exit 1
 
-:: The .dlls end up in the wrong place
-move %LIBRARY_LIB%\icu*.dll %LIBRARY_BIN%
+:: Install import libraries
+copy /Y "%LIBDIR%\icu*.lib" "%LIBRARY_LIB%\"
 if errorlevel 1 exit 1
+
+:: Install DLLs
+copy /Y "%BINDIR%\icu*.dll" "%LIBRARY_BIN%\"
+if errorlevel 1 exit 1
+
+:: Install command-line tools
+for %%t in (derb genbrk gencfu gencnval gendict gennorm2 genrb gensprep icuexportdata icuinfo makeconv pkgdata uconv) do (
+    if exist "%BINDIR%\%%t.exe" copy /Y "%BINDIR%\%%t.exe" "%LIBRARY_BIN%\"
+)
