@@ -22,6 +22,9 @@ build:
 
 requirements:
   build:
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - libtool        # [unix]
     - make           # [unix]
     - python         # [win]
