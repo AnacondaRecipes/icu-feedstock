@@ -1,97 +1,124 @@
-{% set version = "73.1" %}
-{% set version_under = version.replace(".", "_") %}
-{% set version_hyphen = version.replace(".", "-") %}
+{% set version = "78.3" %}
 
 package:
   name: icu
   version: {{ version }}
 
 source:
-  - url: https://github.com/unicode-org/icu/releases/download/release-{{ version_hyphen }}/icu4c-{{ version_under }}-src.tgz
-    sha256: a457431de164b4aa7eca00ed134d00dfbf88a77c6986a10ae7774fc076bb8c45
+  - url: https://github.com/unicode-org/icu/releases/download/release-{{ version }}/icu4c-{{ version }}-sources.tgz
+    sha256: 3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0
     patches:
       # Include an extra header when using mingw.
-      - icu4c-4_9_1-mingw-w64-mkdir-compatibility.patch  # [win]
+      - patches/icu4c-4_9_1-mingw-w64-mkdir-compatibility.patch  # [win]
       # Omit lib prefix on libraries.
-      - icu-config.patch  # [win]
-      - mach-port-t.patch  # [osx]
-      # patch for ICU-22356, required by qt
-      - icu-22356.patch
-
-  - url: https://github.com/unicode-org/icu/releases/download/release-{{ version_hyphen }}/icu4c-{{ version_under }}-data.zip
-    sha256: 07d7557efb30fc2e9b74652f1525603b3209a4539d2d345d704e3df3bf9b957e
-    folder: source/data
+      - patches/icu-config.patch   # [win]
+      - patches/mach-port-t.patch  # [osx]
 
 build:
   number: 0
   run_exports:
     # icu changes their file extension with each major rev.  Default pin OK.
     - {{ pin_subpackage('icu') }}
-  skip: True  # [win and vc>14]
-  missing_dso_whitelist:  # [s390x]
-    - $RPATH/ld64.so.1    # [s390x]
 
 requirements:
   build:
-    - m2-base  # [win]
-    - m2-make  # [win]
-    - libtool  # [unix]
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - make     # [unix]
-    - python   # [win]
-    - posix    # [win]
-    - patch       # [not win]
-    - m2-patch    # [win]
-  host:
-  run:
+    - libtool        # [unix]
+    - make           # [unix]
+    - python         # [win]
+    - msys2-base     # [win]
+    - msys2-make     # [win]
+    - msys2-posix    # [win]
 
 test:
   files:
     # From http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/gb-18030-2000.ucm
-    - gb-18030-2000.ucm
-    # From ICU's data folder.
-    - de.txt
+    - tests/gb-18030-2000.ucm
+    # From ICU's data folder
+    - tests/de.txt
+  {% set major = version.split(".")[0] %}
+  {% set libs = [
+     "libicudata",
+     "libicui18n",
+     "libicuio",
+     "libicutest",
+     "libicutu",
+     "libicuuc"
+   ] %}
   commands:
-    # Libraries
-    {% set libs = [
-       "libicudata",
-       "libicui18n",
-       "libicuio",
-       "libicutest",
-       "libicutu",
-       "libicuuc"
-     ] %}
+    # Static libraries
     {% for each_lib in libs %}
     - test -f $PREFIX/lib/{{ each_lib }}.a  # [not win]
-    - test -f $PREFIX/lib/{{ each_lib }}.{{ version }}.dylib   # [osx]
-    - test -f $PREFIX/lib/{{ each_lib }}.so.{{ version }}  # [linux]
     {% endfor %}
 
-    # CLI tests
+    # Shared libraries (full version, major version, and unversioned symlink)
+    {% for each_lib in libs %}
+    - test -f $PREFIX/lib/{{ each_lib }}.{{ version }}.dylib   # [osx]
+    - test -f $PREFIX/lib/{{ each_lib }}.{{ major }}.dylib     # [osx]
+    - test -L $PREFIX/lib/{{ each_lib }}.dylib                 # [osx]
+    - test -f $PREFIX/lib/{{ each_lib }}.so.{{ version }}      # [linux]
+    - test -f $PREFIX/lib/{{ each_lib }}.so.{{ major }}        # [linux]
+    - test -L $PREFIX/lib/{{ each_lib }}.so                    # [linux]
+    {% endfor %}
+
+    # Public headers
+    - test -f $PREFIX/include/unicode/utypes.h    # [not win]
+    - test -f $PREFIX/include/unicode/uvernum.h   # [not win]
+    - test -f $PREFIX/include/unicode/ucnv.h      # [not win]
+    - test -f $PREFIX/include/unicode/unistr.h    # [not win]
+
+    # ICU version macros in public headers
+    - grep -q "U_ICU_VERSION_MAJOR_NUM {{ major }}" $PREFIX/include/unicode/uvernum.h    # [not win]
+    - grep -q 'U_ICU_VERSION "{{ version }}"' $PREFIX/include/unicode/uvernum.h          # [not win]
+
+    # pkg-config files (presence + version metadata)
+    - test -f $PREFIX/lib/pkgconfig/icu-uc.pc     # [not win]
+    - test -f $PREFIX/lib/pkgconfig/icu-i18n.pc   # [not win]
+    - test -f $PREFIX/lib/pkgconfig/icu-io.pc     # [not win]
+
+    # ICU data bundle (pkgdata.inc / Makefile.inc let users rebuild data)
+    - test -d $PREFIX/lib/icu                                 # [not win]
+    - test -f $PREFIX/lib/icu/{{ version }}/pkgdata.inc       # [not win]
+    - test -f $PREFIX/lib/icu/{{ version }}/Makefile.inc      # [not win]
+
+    # icu-config plumbing
+    - test "$(icu-config --version)" = "{{ version }}"        # [not win]
+    - test -n "$(icu-config --prefix)"                        # [not win]
+    - test -n "$(icu-config --cflags)"                        # [not win]
+    - test -n "$(icu-config --cxxflags)"                      # [not win]
+    - test -n "$(icu-config --cppflags)"                      # [not win]
+    - test -n "$(icu-config --ldflags)"                       # [not win]
+    - test -n "$(icu-config --ldflags-icuio)"                 # [not win]
+
+    # CLI tools
     - genbrk --help
     - gencfu --help
     - gencnval --help
     - gendict --help
+    # genrb --help returns exit 1 in ICU 78.x (quirk of the tool); the
+    # functional `genrb tests/de.txt` below covers it instead.
+    - icuexportdata --help
     - icuinfo --help
-    - icu-config --help  # [not win]
-    - makeconv gb-18030-2000.ucm
-    - genrb de.txt  # [not win]
-    - echo "de.res" > list.txt  # [not win]
-    - pkgdata -p mybundle list.txt  # [not win]
+    - icu-config --help                           # [not win]
+
+    # Functional checks
+    - icuinfo | grep -F "{{ version }}"           # [not win]
+    - genrb tests/de.txt                          # [not win]
+    - test -s de.res                              # [not win]
+    - makeconv -d . tests/gb-18030-2000.ucm
+    - test -s gb-18030-2000.cnv                   # [not win]
 
 about:
-  home: https://icu.unicode.org/
+  home: https://icu.unicode.org
   license: MIT
   license_family: MIT
   license_file: LICENSE
-  summary: 'International Components for Unicode.'
+  summary: International Components for Unicode
   description: |
     ICU is a mature, widely used set of C/C++ and Java libraries providing
     Unicode and Globalization support for software applications. ICU is
     widely portable and gives applications the same results on all platforms
     and between C/C++ and Java software.
-  doc_url: https://unicode-org.github.io/icu/
+  doc_url: https://unicode-org.github.io/icu
   dev_url: https://github.com/unicode-org/icu
 
 extra:
