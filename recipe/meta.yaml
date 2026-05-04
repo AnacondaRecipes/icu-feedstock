@@ -14,6 +14,15 @@ source:
       - patches/icu-config.patch   # [win]
       - patches/mach-port-t.patch  # [osx]
 
+  # Without this archive ICU's `data/` Makefile cannot regenerate the
+  # locale resource bundles on Windows (`make[1]: *** No rule to make
+  # target 'out/tmp/dirs.timestamp'`). The sources tarball ships a
+  # pre-built icudt78l.dat for shared-data builds, but the per-locale
+  # source files needed for the Windows pkgdata flow live in this zip.
+  - url: https://github.com/unicode-org/icu/releases/download/release-{{ version }}/icu4c-{{ version }}-data.zip
+    sha256: 9d8b3899096aeb83e4e21ef8a40fec9e03b28db18c48452efac882ce25a91e27
+    folder: source/data
+
 build:
   number: 0
   run_exports:

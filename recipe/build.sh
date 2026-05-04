@@ -7,7 +7,7 @@ set -ex
 if [[ "${target_platform:-}" == win-* ]]; then
   # MSVC's link.exe must come before MSYS2's coreutils `link` on PATH.
   export PATH="$(dirname "$(which -a link | grep MSVC | head -1)"):$PATH"
-  export CXXFLAGS="${CXXFLAGS:-} /std:c++17"
+  export CXXFLAGS="$CXXFLAGS /std:c++17"
   # Tell ICU's configure we're targeting MSVC (not real MSYS).
   cp source/config/mh-msys-msvc source/config/mh-unknown
   # configure mis-detects EXEEXT="" for *-pc-windows; force .exe back in.
