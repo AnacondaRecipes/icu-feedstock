@@ -34,6 +34,16 @@ if [[ "${target_platform:-}" == osx-* ]]; then
   export LDFLAGS="${LDFLAGS:-} -Wl,-headerpad,0x1000"
 fi
 
+EXTRA_OPTS=""
+if [[ "${target_platform:-}" != win-* ]]; then
+  # Static libs are required by our test suite (test -f libicu*.a). On
+  # Windows + MSVC, --enable-static breaks data packaging: ICU's data
+  # Makefile expects an "out/tmp/dirs.timestamp" rule that only exists in
+  # the shared-only build, so adding --enable-static there fails with
+  # "No rule to make target 'out/tmp/dirs.timestamp'".
+  EXTRA_OPTS="--enable-static"
+fi
+
 ./configure --prefix="${PREFIX}"  \
             --build=${BUILD}      \
             --host=${HOST}        \
@@ -41,7 +51,7 @@ fi
             --disable-extras      \
             --disable-layout      \
             --disable-tests       \
-            --enable-static
+            ${EXTRA_OPTS}
 
 make -j${CPU_COUNT} ${VERBOSE_CM}
 make check
