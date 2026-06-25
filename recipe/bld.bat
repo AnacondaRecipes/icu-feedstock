@@ -25,7 +25,7 @@ msbuild source\allinone\allinone.sln ^
 
 :: msbuild may return non-zero due to test data build needing the py launcher.
 :: Verify the essential artifacts exist instead.
-if not exist "%BINDIR%\icuuc73.dll" (
+if not exist "%BINDIR%\icuuc*.dll" (
     echo ERROR: ICU build failed - essential DLLs not found in %BINDIR%.
     if not exist "%BINDIR%" (
         echo Listing top-level directories for debugging:
@@ -36,8 +36,8 @@ if not exist "%BINDIR%\icuuc73.dll" (
     )
     exit 1
 )
-if not exist "%BINDIR%\icudt73.dll" (
-    echo ERROR: ICU data build failed - icudt73.dll not found in %BINDIR%.
+if not exist "%BINDIR%\icudt*.dll" (
+    echo ERROR: ICU data build failed - icudt*.dll not found in %BINDIR%.
     exit 1
 )
 
@@ -74,7 +74,7 @@ if not exist "%LIBRARY_LIB%\pkgconfig" mkdir "%LIBRARY_LIB%\pkgconfig"
     echo.
     echo Name: icu-uc
     echo Description: International Components for Unicode: Common Library
-    echo Version: 73.1
+    echo Version: %PKG_VERSION%
     echo Libs: -L${libdir} -licuuc -licudt
     echo Cflags: -I${includedir}
 )
@@ -87,7 +87,7 @@ if not exist "%LIBRARY_LIB%\pkgconfig" mkdir "%LIBRARY_LIB%\pkgconfig"
     echo.
     echo Name: icu-i18n
     echo Description: International Components for Unicode: Internationalization Library
-    echo Version: 73.1
+    echo Version: %PKG_VERSION%
     echo Requires: icu-uc
     echo Libs: -L${libdir} -licuin
     echo Cflags: -I${includedir}
@@ -101,7 +101,7 @@ if not exist "%LIBRARY_LIB%\pkgconfig" mkdir "%LIBRARY_LIB%\pkgconfig"
     echo.
     echo Name: icu-io
     echo Description: International Components for Unicode: Stream and I/O Library
-    echo Version: 73.1
+    echo Version: %PKG_VERSION%
     echo Requires: icu-uc icu-i18n
     echo Libs: -L${libdir} -licuio
     echo Cflags: -I${includedir}

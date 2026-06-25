@@ -1,0 +1,10 @@
+anaconda_config_version: 1
+upstream_sources:
+  - github:
+      identifier: unicode-org/icu
+      prefix: cldr%2F
+      strip_suffix: -rc
+      use_max_tag: true
+      from_pattern: ^release-(.+)$
+      to_pattern: \1
+      exclude_regex: (?i)(?:^(?=.*(?:(?<=\d)rc\d*|(?<=\d)dev\d+|(?:^|[-._])(?:alpha|beta|gamma|pre|preview)(?:\d+)?|[-._]rc\d+|(?:^|[-._])dev\d+|(?:\d+\.)+\d+[ab]\d*)).+$|^tools-.+$)
