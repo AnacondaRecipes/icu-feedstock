@@ -1,4 +1,5 @@
 {% set version = "78.3" %}
+{% set major = version.split(".")[0] %}
 
 package:
   name: icu
@@ -8,10 +9,7 @@ source:
   - url: https://github.com/unicode-org/icu/releases/download/release-{{ version }}/icu4c-{{ version }}-sources.tgz
     sha256: 3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0
     patches:
-      # Include an extra header when using mingw.
-      - patches/icu4c-4_9_1-mingw-w64-mkdir-compatibility.patch  # [win]
-      # Omit lib prefix on libraries.
-      - patches/icu-config.patch   # [win]
+      - patches/ctestfw-dll-output.patch  # [win]
       - patches/mach-port-t.patch  # [osx]
 
   # Without this archive ICU's `data/` Makefile cannot regenerate the
@@ -24,7 +22,7 @@ source:
     folder: source/data
 
 build:
-  number: 0
+  number: 1
   run_exports:
     # icu changes their file extension with each major rev.  Default pin OK.
     - {{ pin_subpackage('icu') }}
@@ -36,10 +34,6 @@ requirements:
     - {{ compiler('cxx') }}
     - libtool        # [unix]
     - make           # [unix]
-    - python         # [win]
-    - msys2-base     # [win]
-    - msys2-make     # [win]
-    - msys2-posix    # [win]
 
 test:
   files:
@@ -47,7 +41,6 @@ test:
     - tests/gb-18030-2000.ucm
     # From ICU's data folder
     - tests/de.txt
-  {% set major = version.split(".")[0] %}
   {% set libs = [
      "libicudata",
      "libicui18n",
@@ -72,20 +65,40 @@ test:
     - test -L $PREFIX/lib/{{ each_lib }}.so                    # [linux]
     {% endfor %}
 
+    # Windows shared libraries (versioned + unversioned names) and import libs
+    {% set win_dlls = ["icudt", "icuin", "icuio", "icutest", "icutu", "icuuc"] %}
+    {% for dll in win_dlls %}
+    - if not exist %LIBRARY_BIN%\{{ dll }}{{ major }}.dll exit 1  # [win]
+    - if not exist %LIBRARY_BIN%\{{ dll }}.dll exit 1  # [win]
+    {% endfor %}
+    {% set win_libs = ["icudt", "icuin", "icuio", "icutest", "icutu", "icuuc"] %}
+    {% for lib in win_libs %}
+    - if not exist %LIBRARY_LIB%\{{ lib }}.lib exit 1  # [win]
+    {% endfor %}
+
     # Public headers
     - test -f $PREFIX/include/unicode/utypes.h    # [not win]
     - test -f $PREFIX/include/unicode/uvernum.h   # [not win]
     - test -f $PREFIX/include/unicode/ucnv.h      # [not win]
     - test -f $PREFIX/include/unicode/unistr.h    # [not win]
+    - if not exist %LIBRARY_INC%\unicode\utypes.h exit 1    # [win]
+    - if not exist %LIBRARY_INC%\unicode\uvernum.h exit 1   # [win]
+    - if not exist %LIBRARY_INC%\unicode\ucnv.h exit 1      # [win]
+    - if not exist %LIBRARY_INC%\unicode\unistr.h exit 1    # [win]
 
     # ICU version macros in public headers
     - grep -q "U_ICU_VERSION_MAJOR_NUM {{ major }}" $PREFIX/include/unicode/uvernum.h    # [not win]
     - grep -q 'U_ICU_VERSION "{{ version }}"' $PREFIX/include/unicode/uvernum.h          # [not win]
+    - findstr /C:"U_ICU_VERSION_MAJOR_NUM {{ major }}" %LIBRARY_INC%\unicode\uvernum.h >nul  # [win]
+    - findstr /C:"U_ICU_VERSION \"{{ version }}\"" %LIBRARY_INC%\unicode\uvernum.h >nul      # [win]
 
     # pkg-config files (presence + version metadata)
     - test -f $PREFIX/lib/pkgconfig/icu-uc.pc     # [not win]
     - test -f $PREFIX/lib/pkgconfig/icu-i18n.pc   # [not win]
     - test -f $PREFIX/lib/pkgconfig/icu-io.pc     # [not win]
+    - if not exist %LIBRARY_LIB%\pkgconfig\icu-uc.pc exit 1     # [win]
+    - if not exist %LIBRARY_LIB%\pkgconfig\icu-i18n.pc exit 1   # [win]
+    - if not exist %LIBRARY_LIB%\pkgconfig\icu-io.pc exit 1     # [win]
 
     # ICU data bundle (pkgdata.inc / Makefile.inc let users rebuild data)
     - test -d $PREFIX/lib/icu                                 # [not win]
@@ -110,6 +123,7 @@ test:
     # functional `genrb tests/de.txt` below covers it instead.
     - icuexportdata --help
     - icuinfo --help
+    - icuinfo | findstr /C:"{{ version }}"  # [win]
     - icu-config --help                           # [not win]
 
     # Functional checks
